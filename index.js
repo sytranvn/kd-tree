@@ -1,3 +1,4 @@
+import Node, { insert, search, newNode, insertRec, searchRec, equalPoint } from "./kdtree";
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
