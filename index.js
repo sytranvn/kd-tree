@@ -1,65 +1,60 @@
-import Node, { KdPoint } from "./kdtree.js";
+import KdTree, { KdPoint } from "./kdtree.js";
+import Rand from "./rand.js";
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
 const points = [];
-const MAX_POINTS = 1000;
-const RADIUS = 5;
+const MAX_POINTS = 100;
+/**
+ * @type {KdPoint}
+ */
 let selectedPoint = null;
 /**
- * @type {Node}
+ * @type {KdTree}
  */
 let root = null;
 /**
  * @type {KdPoint}
  */
 let nearestPoint = null;
-let nearestPointBf = null;
-
+let autoId = null
+Rand.seed(100, 200, 300, 400)
 function generatePoints() {
 	const width = canvas.width;
 	const height = canvas.height;
 	root = null;
 	nearestPoint = null;
 	for (let i = 0; i < MAX_POINTS; i++) {
-		points[i] = {
-			x: Math.random() * width,
-			y: Math.random() * height,
-			radius: RADIUS,
-		}
-		const p = new KdPoint(points[i].x, points[i].y);
-		if (root) root.insert(p);
-		else root = new Node(p);
+		points[i] = new KdPoint(
+			Rand.random() * width,
+			Rand.random() * height,
+		)
 	}
+	root = new KdTree([...points], 0);
 }
 
 function draw() {
 	const width = canvas.width;
 	const height = canvas.height;
 	ctx.clearRect(0, 0, width, height);
+	root.draw(ctx, 'black', selectedPoint)
 
-	for (const p of points) {
-		circle(p, 'black')
-	}
 
 	if (selectedPoint) {
-		circle(selectedPoint, 'blue')
-	}
+		selectedPoint.draw(ctx, 'blue')
+		const result = root.nearestNeighbor(selectedPoint);
+		result.pos.draw(ctx, 'red')
+		ctx.beginPath();
+		ctx.arc(...selectedPoint.axes, selectedPoint.distance(result.pos), 0, Math.PI * 2);
+		ctx.stroke()
 
-	if (nearestPoint) {
-		circle(nearestPoint, 'yellow')
+		const bfResult = nearestNeighborBfSearch()
+		if (!bfResult.equals(result.pos)) {
+			bfResult.draw(ctx, 'orange')
+			console.log(bfResult, result.pos)
+			debugger
+		}
 	}
-
-	if (nearestPointBf) {
-		circle(nearestPointBf, 'red')
-	}
-}
-
-function circle(p, color) {
-	ctx.beginPath();
-	ctx.arc(p.x, p.y, p.radius, 0, 2 * Math.PI);
-	ctx.fillStyle = color;
-	ctx.fill();
 }
 
 function resizeCanvas() {
@@ -67,37 +62,52 @@ function resizeCanvas() {
 	canvas.height = window.innerHeight;
 	generatePoints();
 	draw();
+	window.kdTree = root;
+	window.ctx = ctx;
 }
 
 function setPoint(e) {
 	const rect = canvas.getBoundingClientRect();
-	selectedPoint = {
-		x: e.clientX - rect.left,
-		y: e.clientY - rect.top,
-		radius: RADIUS,
-	}
-	const nearestNode = root.nearestNeighborSearch(new KdPoint(selectedPoint.x, selectedPoint.y));
-	nearestPoint = nearestNode ? { x: nearestNode.point.axes[0], y: nearestNode.point.axes[1], radius: RADIUS } : null;
-	nearestNeighborBfSearch();
+	selectedPoint = new KdPoint(e.clientX - rect.left, e.clientY - rect.top)
 	draw();
 }
 
 function nearestNeighborBfSearch() {
-	nearestPointBf = null;
+	let nearestPointBf = null;
 	let minDis = Number.POSITIVE_INFINITY;
 	for (const point of points) {
-		const dis = (point.x - selectedPoint.x)**2 + (point.y - selectedPoint.y)**2;
+		const dis = point.sqrDistance(selectedPoint)
 		if (dis < minDis) {
 			minDis = dis;
 			nearestPointBf = point;
 		}
 	}
+	return nearestPointBf
+}
+
+function auto() {
+	if (autoId) {
+		clearInterval(autoId)
+		autoId = null
+	}
+	else autoId = setInterval(() => {
+		const width = canvas.width;
+		const height = canvas.height;
+		selectedPoint = new KdPoint(
+				Rand.random() * width,
+				Rand.random() * height,
+		)
+		draw()
+	}, 100)
 }
 
 function main() {
 	resizeCanvas();
 	window.addEventListener('resize', resizeCanvas, false);
 	window.addEventListener('mousedown', setPoint, false);
+	window.addEventListener('keydown', auto, false)
 }
 
 main()
+
+
