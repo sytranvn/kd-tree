@@ -52,7 +52,8 @@ function draw() {
 		if (!bfResult.equals(result.pos)) {
 			bfResult.draw(ctx, 'orange')
 			console.log(bfResult, result.pos)
-			debugger
+			clearInterval(autoId)
+			autoId = null
 		}
 	}
 }
