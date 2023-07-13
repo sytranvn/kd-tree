@@ -19,7 +19,6 @@ let root = null;
  */
 let nearestPoint = null;
 let autoId = null
-// Rand.seed(100, 200, 300, 400)
 let delay = 100;
 function generatePoints() {
 	const width = canvas.width;
@@ -29,7 +28,7 @@ function generatePoints() {
 	for (let i = 0; i < MAX_POINTS; i++) {
 		points[i] = new KdPoint(
 			Rand.random() * width,
-			Rand.random() * height,
+			(Rand.random() * height - 30) + 30, // seed input padding
 		)
 	}
 	root = new KdTree([...points], 0);
@@ -121,11 +120,17 @@ function start() {
 		}, Math.max(delay, 10))
 }
 
+function addSeed(e) {
+	Rand.seed(e.target.value);
+	resizeCanvas();
+}
+
 function main() {
 	resizeCanvas();
 	window.addEventListener('resize', resizeCanvas, false);
 	window.addEventListener('mousedown', setPoint, false);
-	window.addEventListener('keydown', handleKeys, false)
+	window.addEventListener('keydown', handleKeys, false);
+	document.getElementById('seed').addEventListener('change', addSeed, false);
 }
 
 main()

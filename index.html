@@ -2,18 +2,23 @@
 	<script type="module" src="index.js">
 	</script>
 	<style>
+		#seed { height: 20px; }
 		canvas {
 			width: 100vw;
-			height: 100vh;
+			height: calc(100vh - 20px);
 			display: block;
 			background: white;
 		}
-		body {
+		* {
 			padding: 0;
 			margin: 0;
+			box-sizing: border-box;
 		}
 	</style>
 </head>
 <body>
+	<p>
+		<input type="number" placeholder="seed" id="seed" />
+	</p>
 	<canvas id="canvas"/>
 </body>
