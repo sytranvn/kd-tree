@@ -1,10 +1,11 @@
 import KdTree, { KdPoint } from "./kdtree.js";
 import Rand from "./rand.js";
+const debug = false;
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
 const points = [];
-const MAX_POINTS = 100;
+const MAX_POINTS = 500;
 /**
  * @type {KdPoint}
  */
@@ -18,7 +19,8 @@ let root = null;
  */
 let nearestPoint = null;
 let autoId = null
-Rand.seed(100, 200, 300, 400)
+// Rand.seed(100, 200, 300, 400)
+let delay = 100;
 function generatePoints() {
 	const width = canvas.width;
 	const height = canvas.height;
@@ -31,6 +33,7 @@ function generatePoints() {
 		)
 	}
 	root = new KdTree([...points], 0);
+	console.log(root.height())
 }
 
 function draw() {
@@ -42,12 +45,11 @@ function draw() {
 
 	if (selectedPoint) {
 		selectedPoint.draw(ctx, 'blue')
-		const result = root.nearestNeighbor(selectedPoint);
+		const result = KdTree.nearestNeighbor(root, selectedPoint);
 		result.pos.draw(ctx, 'red')
 		ctx.beginPath();
 		ctx.arc(...selectedPoint.axes, selectedPoint.distance(result.pos), 0, Math.PI * 2);
 		ctx.stroke()
-
 		const bfResult = nearestNeighborBfSearch()
 		if (!bfResult.equals(result.pos)) {
 			bfResult.draw(ctx, 'orange')
@@ -65,6 +67,7 @@ function resizeCanvas() {
 	draw();
 	window.kdTree = root;
 	window.ctx = ctx;
+	window.debug = debug;
 }
 
 function setPoint(e) {
@@ -86,27 +89,43 @@ function nearestNeighborBfSearch() {
 	return nearestPointBf
 }
 
-function auto() {
-	if (autoId) {
+function handleKeys(e) {
+	if (e.key == " ") {
+		start()
+	} else if (e.key == "ArrowDown") {
+		delay += 100;
 		clearInterval(autoId)
 		autoId = null
+		start()
+	} else if (e.key == "ArrowUp") {
+		delay -= 100;
+		clearInterval(autoId)
+		autoId = null
+		start()
 	}
-	else autoId = setInterval(() => {
-		const width = canvas.width;
-		const height = canvas.height;
-		selectedPoint = new KdPoint(
+}
+
+function start() {
+		if (autoId) {
+			clearInterval(autoId)
+			autoId = null
+		}
+		else autoId = setInterval(() => {
+			const width = canvas.width;
+			const height = canvas.height;
+			selectedPoint = new KdPoint(
 				Rand.random() * width,
 				Rand.random() * height,
-		)
-		draw()
-	}, 100)
+			)
+			draw()
+		}, Math.max(delay, 10))
 }
 
 function main() {
 	resizeCanvas();
 	window.addEventListener('resize', resizeCanvas, false);
 	window.addEventListener('mousedown', setPoint, false);
-	window.addEventListener('keydown', auto, false)
+	window.addEventListener('keydown', handleKeys, false)
 }
 
 main()
