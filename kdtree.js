@@ -1,3 +1,9 @@
+class BST {
+	height() {
+		return Math.max(this.left?.height() || 0, this.right?.height() || 0) + 1;
+	}
+}
+
 /**
  * @class Point k-d point
  */
@@ -35,6 +41,7 @@ export class KdPoint {
 	 * @returns {number}
 	 */
 	distance(p2) {
+		if (!p2) return Number.POSITIVE_INFINITY;
 		return Math.sqrt(this.axes.reduce((sum, axis, index) => {
 			return sum + (axis - p2.axes[index]) ** 2
 		}, 0));
@@ -46,6 +53,7 @@ export class KdPoint {
 	 * @returns {number}
 	 */
 	sqrDistance(p2) {
+		if (!p2) return Number.POSITIVE_INFINITY;
 		return this.axes.reduce((sum, axis, index) => {
 			return sum + (axis - p2.axes[index]) ** 2
 		}, 0);
@@ -75,12 +83,13 @@ export class KdPoint {
  * @property {KdTree} left
  * @property {KdTree} right
  */
-export default class KdTree {
+export default class KdTree extends BST {
 	/**
 	* @param {KdPoint[]} points
 	* @param {number} depth
 	*/
 	constructor(points, depth, name = 'root') {
+		super()
 		const cd = depth % points[0].d;
 		points.sort((p1, p2) => p1.axes[cd] - p2.axes[cd]);
 		const median = points.length >> 1;
@@ -102,7 +111,7 @@ export default class KdTree {
 			/**
 			 * @type {KdTree|undefined}
 			 */
-			this.right = new KdTree(points, depth + 1, `${this.name}.right-${depth + 1}`);
+			this.right = new KdTree(points, depth + 1, `${this.name}.right`);
 		}
 	}
 
@@ -116,10 +125,7 @@ export default class KdTree {
 		let result;
 		const cd = depth % targetPoint.d;
 		// this.pos.draw(window.ctx, `#${color.toString(16)}`);
-		if (this.pos.equals(targetPoint)) {
-			result = this;
-		}
-		else if (targetPoint.axes[cd] < this.pos.axes[cd]) {
+		if (targetPoint.axes[cd] < this.pos.axes[cd]) {
 			result = this.left?.searchPoint(targetPoint, depth + 1, color + 0x08) || this;
 		}
 		else result = this.right?.searchPoint(targetPoint, depth + 1, color + 0x08) || this;
@@ -128,56 +134,49 @@ export default class KdTree {
 	}
 
 	/**
+	 * @param {KdTree} root 
 	 * @param {KdPoint} targetPoint
 	 * @param {number} [ nearestDistance=Number.POSITIVE_INFINITY ]
 	 * @param {KdTree} [ nearestPoint=null ]
 	 * @param {number} [ depth=0 ]
 	 * @returns {KdTree}
 	 */
-	nearestNeighbor(targetPoint, depth = 0, nearestDistance = Number.POSITIVE_INFINITY, nearestPoint = null) {
+	static nearestNeighbor(root, targetPoint, depth = 0, nearestDistance = Number.POSITIVE_INFINITY) {
 		const cd = depth % targetPoint.d;
-		// this.pos.draw(window.ctx, 'green', depth.toString());
-		if (!nearestPoint) {
-			if (this.pos.equals(targetPoint)) {
-				nearestPoint = this;
-				nearestDistance = 0
-			}
-			else if (targetPoint.axes[cd] < this.pos.axes[cd]) {
-				nearestPoint = this.left?.nearestNeighbor(targetPoint, depth + 1) || this;
-				nearestDistance = targetPoint.sqrDistance(nearestPoint.pos);
-			}
-			else {
-				nearestPoint = this.right?.nearestNeighbor(targetPoint, depth + 1) || this;
-				nearestDistance = targetPoint.sqrDistance(nearestPoint.pos);
-			}
+		if (!root) return null;
+		if (!root.left && !root.right) return root;
+		let result
+		if (targetPoint.distance(root.pos) < nearestDistance) {
+			result = root
+			nearestDistance = targetPoint.distance(root.pos)
 		}
-		if (targetPoint.sqrDistance(this.pos) < nearestDistance) {
-			nearestPoint = this;
-			nearestDistance = targetPoint.sqrDistance(nearestPoint.pos);
+		let t1, t2;
+		if (targetPoint.axes[cd] < root.pos.axes[cd] && root.left) {
+			t1 = root.left; t2 = root.right
+		} else {
+			t2 = root.left; t1 = root.right;
 		}
-
-		if (this.left && (targetPoint.axes[( cd+1 ) % targetPoint.d] - this.left.pos.axes[( cd+1 ) % targetPoint.d])**2 < nearestDistance) {
-			nearestPoint = this.left.nearestNeighbor(targetPoint, depth + 1, nearestDistance, nearestPoint)
-			nearestDistance = targetPoint.sqrDistance(nearestPoint.pos);
+		const nnT1 = KdTree.nearestNeighbor(t1, targetPoint, depth + 1, nearestDistance);
+		const t1Distance = Math.min(nearestDistance, targetPoint.distance(nnT1?.pos));
+		if (t1Distance < nearestDistance) {
+			result = nnT1;
+			nearestDistance = t1Distance;
 		}
-
-		if (this.right && (targetPoint.axes[( cd+1 ) % targetPoint.d] - this.right.pos.axes[( cd+1 ) % targetPoint.d])**2 < nearestDistance) {
-			nearestPoint = this.right.nearestNeighbor(targetPoint, depth + 1, nearestDistance, nearestPoint)
-			nearestDistance = targetPoint.sqrDistance(nearestPoint.pos);
+		window.ctx.beginPath();
+		window.ctx.arc(...targetPoint.axes, nearestDistance, 0, Math.PI * 2);
+		window.ctx.stroke();
+		if (Math.abs(targetPoint.axes[cd] - root.pos.axes[cd]) < nearestDistance) {
+			const nnT2 = KdTree.nearestNeighbor(t2, targetPoint, depth + 1, nearestDistance)
+			if (targetPoint.distance(nnT2?.pos) < nearestDistance)
+				return nnT2;
 		}
-		
-		
-		// ctx.beginPath();
-		// ctx.arc(...this.pos.axes, 7, 0, 2 * Math.PI);
-		// ctx.strokeStyle = '#ff0000'	
-		// ctx.stroke();
-		return nearestPoint;
+		return result;
 	}
 
 	draw(ctx, color, selectedPoint = null) {
 		let text = ''
-		if (selectedPoint) text = selectedPoint.distance(this.pos).toFixed(2)
-		this.pos.draw(ctx, color, null, 10, 10);
+		if (selectedPoint) text = this.name + ' ' + selectedPoint.distance(this.pos).toFixed(2)
+		this.pos.draw(ctx, color, text, 10, 10);
 		this.left?.draw(ctx, color, selectedPoint);
 		this.right?.draw(ctx, color, selectedPoint);
 	}
