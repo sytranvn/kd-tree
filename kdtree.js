@@ -162,9 +162,11 @@ export default class KdTree extends BST {
 			result = nnT1;
 			nearestDistance = t1Distance;
 		}
-		window.ctx.beginPath();
-		window.ctx.arc(...targetPoint.axes, nearestDistance, 0, Math.PI * 2);
-		window.ctx.stroke();
+		if (window.debug) {
+			window.ctx.beginPath();
+			window.ctx.arc(...targetPoint.axes, nearestDistance, 0, Math.PI * 2);
+			window.ctx.stroke();
+		}
 		if (Math.abs(targetPoint.axes[cd] - root.pos.axes[cd]) < nearestDistance) {
 			const nnT2 = KdTree.nearestNeighbor(t2, targetPoint, depth + 1, nearestDistance)
 			if (targetPoint.distance(nnT2?.pos) < nearestDistance)
@@ -175,7 +177,7 @@ export default class KdTree extends BST {
 
 	draw(ctx, color, selectedPoint = null) {
 		let text = ''
-		if (selectedPoint) text = this.name + ' ' + selectedPoint.distance(this.pos).toFixed(2)
+		if (selectedPoint) text = window.debug ? this.name + ' ' + selectedPoint.distance(this.pos).toFixed(2) : null
 		this.pos.draw(ctx, color, text, 10, 10);
 		this.left?.draw(ctx, color, selectedPoint);
 		this.right?.draw(ctx, color, selectedPoint);
