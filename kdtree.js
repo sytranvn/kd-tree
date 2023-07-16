@@ -60,7 +60,7 @@ export class KdPoint {
 	 */
 	draw(ctx, color, text = null, x = 5) {
 		ctx.beginPath();
-		ctx.arc(...this.axes, 5, 0, 2 * Math.PI);
+		ctx.arc(...this.axes, 3.2, 0, 2 * Math.PI);
 		ctx.fillStyle = color;
 		ctx.fill();
 		if (text) {

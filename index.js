@@ -5,7 +5,7 @@ const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
 const points = [];
-const MAX_POINTS = 500;
+const MAX_POINTS = 1500;
 /**
  * @type {KdPoint}
  */
@@ -28,7 +28,7 @@ function generatePoints() {
 	for (let i = 0; i < MAX_POINTS; i++) {
 		points[i] = new KdPoint(
 			Rand.random() * width,
-			(Rand.random() * height - 30) + 30, // seed input padding
+			(Rand.random() * (height - 50) + 25), // seed input padding
 		)
 	}
 	root = new KdTree([...points], 0);
@@ -74,7 +74,7 @@ function animation(trace, result) {
 					ctx.stroke()
 				}
 				if (!node.pos.equals(result.pos))
-				node.pos.draw(ctx, i < trace.length - 1 ? 'yellow' : 'orange')
+					node.pos.draw(ctx, i < trace.length - 1 ? 'yellow' : 'orange')
 
 			}, i * 600)
 		})
@@ -82,7 +82,7 @@ function animation(trace, result) {
 }
 function resizeCanvas() {
 	canvas.width = window.innerWidth;
-	canvas.height = window.innerHeight;
+	canvas.height = window.innerHeight - 25;
 	generatePoints();
 	draw();
 	window.kdTree = root;
