@@ -1,9 +1,4 @@
-class BST {
-	height() {
-		return Math.max(this.left?.height() || 0, this.right?.height() || 0) + 1;
-	}
-}
-
+import BST from "./bst.js";
 /**
  * @class Point k-d point
  */
@@ -85,6 +80,22 @@ export class KdPoint {
  */
 export default class KdTree extends BST {
 	/**
+	 * @type {KdPoint}
+	 */
+	pos;
+	/**
+	 * @type {KdTree|undefined}
+	 */
+	left;
+	/**
+	 * @type {KdTree|undefined}
+	 */
+	right;
+	/**
+	 * @type {string}
+	 */
+	name;
+	/**
 	* @param {KdPoint[]} points
 	* @param {number} depth
 	*/
@@ -93,24 +104,12 @@ export default class KdTree extends BST {
 		const cd = depth % points[0].d;
 		points.sort((p1, p2) => p1.axes[cd] - p2.axes[cd]);
 		const median = points.length >> 1;
-		/**
-		 * @type {KdPoint}
-		 */
 		this.pos = points.splice(median, 1)[0];
-		/**
-		 * @type {string}
-		 */
 		this.name = name;
 		if (points.length) {
-			/**
-			 * @type {KdTree|undefined}
-			 */
 			this.left = new KdTree(points.splice(0, median), depth + 1, `${this.name}.left`);
 		}
 		if (points.length) {
-			/**
-			 * @type {KdTree|undefined}
-			 */
 			this.right = new KdTree(points, depth + 1, `${this.name}.right`);
 		}
 	}
@@ -124,7 +123,6 @@ export default class KdTree extends BST {
 	searchPoint(targetPoint, depth = 0, color = 0xFF000088) {
 		let result;
 		const cd = depth % targetPoint.d;
-		// this.pos.draw(window.ctx, `#${color.toString(16)}`);
 		if (targetPoint.axes[cd] < this.pos.axes[cd]) {
 			result = this.left?.searchPoint(targetPoint, depth + 1, color + 0x08) || this;
 		}
@@ -141,9 +139,11 @@ export default class KdTree extends BST {
 	 * @param {number} [ depth=0 ]
 	 * @returns {KdTree}
 	 */
-	static nearestNeighbor(root, targetPoint, depth = 0, nearestDistance = Number.POSITIVE_INFINITY) {
+	static nearestNeighbor(root, targetPoint, depth = 0, nearestDistance = Number.POSITIVE_INFINITY, trace) {
 		const cd = depth % targetPoint.d;
 		if (!root) return null;
+		if (trace) { trace.push(root); }
+
 		if (!root.left && !root.right) return root;
 		let result
 		if (targetPoint.distance(root.pos) < nearestDistance) {
@@ -156,19 +156,14 @@ export default class KdTree extends BST {
 		} else {
 			t2 = root.left; t1 = root.right;
 		}
-		const nnT1 = KdTree.nearestNeighbor(t1, targetPoint, depth + 1, nearestDistance);
+		const nnT1 = KdTree.nearestNeighbor(t1, targetPoint, depth + 1, nearestDistance, trace);
 		const t1Distance = Math.min(nearestDistance, targetPoint.distance(nnT1?.pos));
 		if (t1Distance < nearestDistance) {
 			result = nnT1;
 			nearestDistance = t1Distance;
 		}
-		if (window.debug) {
-			window.ctx.beginPath();
-			window.ctx.arc(...targetPoint.axes, nearestDistance, 0, Math.PI * 2);
-			window.ctx.stroke();
-		}
 		if (Math.abs(targetPoint.axes[cd] - root.pos.axes[cd]) < nearestDistance) {
-			const nnT2 = KdTree.nearestNeighbor(t2, targetPoint, depth + 1, nearestDistance)
+			const nnT2 = KdTree.nearestNeighbor(t2, targetPoint, depth + 1, nearestDistance, trace)
 			if (targetPoint.distance(nnT2?.pos) < nearestDistance)
 				return nnT2;
 		}
@@ -182,7 +177,6 @@ export default class KdTree extends BST {
 		this.left?.draw(ctx, color, selectedPoint);
 		this.right?.draw(ctx, color, selectedPoint);
 	}
+
 }
 
-window.KdTree = KdTree;
-window.KdPoint = KdPoint;

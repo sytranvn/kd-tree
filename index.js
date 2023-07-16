@@ -32,7 +32,6 @@ function generatePoints() {
 		)
 	}
 	root = new KdTree([...points], 0);
-	console.log(root.height())
 }
 
 function draw() {
@@ -44,8 +43,11 @@ function draw() {
 
 	if (selectedPoint) {
 		selectedPoint.draw(ctx, 'blue')
-		const result = KdTree.nearestNeighbor(root, selectedPoint);
+		const trace = []
+		const result = KdTree.nearestNeighbor(root, selectedPoint, 0, Number.POSITIVE_INFINITY, trace);
 		result.pos.draw(ctx, 'red')
+		if (!autoId)
+			animation(trace, result)
 		ctx.beginPath();
 		ctx.arc(...selectedPoint.axes, selectedPoint.distance(result.pos), 0, Math.PI * 2);
 		ctx.stroke()
@@ -59,6 +61,25 @@ function draw() {
 	}
 }
 
+function animation(trace, result) {
+	if (trace) {
+		ctx.beginPath()
+		trace.forEach((node, i) => {
+			setTimeout(function() {
+				if (i < trace.length - 1) {
+					ctx.lineWidth = 1;
+					ctx.beginPath()
+					ctx.moveTo(...node.pos.axes)
+					ctx.lineTo(...trace[i + 1]?.pos.axes)
+					ctx.stroke()
+				}
+				if (!node.pos.equals(result.pos))
+				node.pos.draw(ctx, i < trace.length - 1 ? 'yellow' : 'orange')
+
+			}, i * 1000)
+		})
+	}
+}
 function resizeCanvas() {
 	canvas.width = window.innerWidth;
 	canvas.height = window.innerHeight;
@@ -105,19 +126,19 @@ function handleKeys(e) {
 }
 
 function start() {
-		if (autoId) {
-			clearInterval(autoId)
-			autoId = null
-		}
-		else autoId = setInterval(() => {
-			const width = canvas.width;
-			const height = canvas.height;
-			selectedPoint = new KdPoint(
-				Rand.random() * width,
-				Rand.random() * height,
-			)
-			draw()
-		}, Math.max(delay, 10))
+	if (autoId) {
+		clearInterval(autoId)
+		autoId = null
+	}
+	else autoId = setInterval(() => {
+		const width = canvas.width;
+		const height = canvas.height;
+		selectedPoint = new KdPoint(
+			Rand.random() * width,
+			Rand.random() * height,
+		)
+		draw()
+	}, Math.max(delay, 10))
 }
 
 function addSeed(e) {
