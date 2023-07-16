@@ -76,7 +76,7 @@ function animation(trace, result) {
 				if (!node.pos.equals(result.pos))
 				node.pos.draw(ctx, i < trace.length - 1 ? 'yellow' : 'orange')
 
-			}, i * 1000)
+			}, i * 600)
 		})
 	}
 }
