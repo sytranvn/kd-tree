@@ -20,6 +20,7 @@ let root = null;
 let nearestPoint = null;
 let autoId = null
 let delay = 100;
+let tracing = null;
 function generatePoints() {
 	const width = canvas.width;
 	const height = canvas.height;
@@ -63,21 +64,26 @@ function draw() {
 
 function animation(trace, result) {
 	if (trace) {
-		ctx.beginPath()
-		trace.forEach((node, i) => {
-			setTimeout(function() {
-				if (i < trace.length - 1) {
-					ctx.lineWidth = 1;
-					ctx.beginPath()
-					ctx.moveTo(...node.pos.axes)
-					ctx.lineTo(...trace[i + 1]?.pos.axes)
-					ctx.stroke()
-				}
-				if (!node.pos.equals(result.pos))
-					node.pos.draw(ctx, i < trace.length - 1 ? 'yellow' : 'orange')
+		if (tracing != null) {
+			clearTimeout(tracing);
+			tracing = null;
+		}
+		function drawPath(i) {
+			if (i == trace.length) return;
+			if (i < trace.length - 1) {
+				ctx.lineWidth = 1;
+				ctx.beginPath()
+				ctx.moveTo(...trace[i].pos.axes)
+				ctx.lineTo(...trace[i + 1]?.pos.axes)
+				ctx.stroke()
+			}
+			if (!trace[i].pos.equals(result.pos))
+				trace[i].pos.draw(ctx, i < trace.length - 1 ? 'yellow' : 'orange')
 
-			}, i * 600)
-		})
+			tracing = setTimeout(() => drawPath(i + 1), 600)
+		}
+		ctx.beginPath()
+		drawPath(0)
 	}
 }
 function resizeCanvas() {
